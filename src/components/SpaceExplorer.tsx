@@ -13,8 +13,10 @@ import {
   MapPin, 
   Plus,
   Telescope,
-  Stars
+  Stars,
+  ArrowLeft
 } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import sampleGalaxy from '@/assets/sample-galaxy.jpg';
@@ -29,6 +31,7 @@ interface Annotation {
 }
 
 const SpaceExplorer = () => {
+  const navigate = useNavigate();
   const viewerRef = useRef<HTMLDivElement>(null);
   const [viewer, setViewer] = useState<OpenSeadragon.Viewer | null>(null);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -184,6 +187,16 @@ const SpaceExplorer = () => {
       <header className="absolute top-0 left-0 right-0 z-50 space-panel border-b border-border/50 backdrop-blur-sm">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/')}
+              className="space-panel border-primary/50 hover:bg-primary/10"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Gallery
+            </Button>
+            
             <div className="flex items-center gap-2">
               <Telescope className="w-6 h-6 text-primary" />
               <h1 className="text-xl font-bold bg-gradient-aurora bg-clip-text text-transparent">
