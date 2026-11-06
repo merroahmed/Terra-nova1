@@ -117,7 +117,7 @@ html[dir="rtl"] .loader__track i { transform-origin: right; }
 .loader__pct { font-size: 12px; letter-spacing: .2em; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* ---------- Home: scroll stage ---------- */
-.track { height: 620vh; position: relative; }
+.track { height: 480vh; position: relative; }
 .stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: #000; }
 .stage__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .stage__grade {
@@ -128,7 +128,7 @@ html[dir="rtl"] .loader__track i { transform-origin: right; }
 }
 .stage__space {
   position: absolute; inset: -4%; opacity: 0; pointer-events: none;
-  background: #05040d url("../assets/space.jpg") center / cover no-repeat;
+  background: #05040d url("../assets/space.png") center / cover no-repeat;
   will-change: opacity, transform;
 }
 .stage__dim { position: absolute; inset: 0; opacity: 0; pointer-events: none; background: radial-gradient(80% 70% at 50% 55%, rgba(5,4,13,.15), rgba(5,4,13,.8)); }
@@ -170,7 +170,7 @@ html[lang="ar"] .line--accent > span { font-style: normal; }
   min-height: 100vh; min-height: 100svh;
   background:
     linear-gradient(rgba(5,4,13,.55), rgba(5,4,13,.8)),
-    #05040d url("../assets/space.jpg") center / cover fixed no-repeat;
+    #05040d url("../assets/space.png") center / cover fixed no-repeat;
 }
 .auth__wrap {
   min-height: inherit; display: flex; align-items: center; justify-content: center;

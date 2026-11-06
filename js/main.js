@@ -11,11 +11,11 @@
   var barProg = $("#barProgress");
 
   /* ---------------- Timeline (fractions of the scroll track) ---------------- */
-  var VIDEO_END = 0.66;           // video plays 0 → VIDEO_END
-  var SPACE_IN = [0.56, 0.80];    // cross-fade to the star field
-  var TITLE_AT = 0.76, LINE_GAP = 0.045, LINE_SPAN = 0.12;
-  var TEXT_AT = [0.85, 0.95];
-  var CTA_AT = [0.91, 1.0];
+  var VIDEO_END = 0.62;           // video plays 0 → VIDEO_END
+  var SPACE_IN = [0.50, 0.72];    // cross-fade to the star field
+  var TITLE_AT = 0.56, LINE_GAP = 0.04, LINE_SPAN = 0.11;
+  var TEXT_AT = [0.78, 0.90];
+  var CTA_AT = [0.84, 0.96];
 
   var duration = 0, cur = 0, running = false, ready = false, lastP = -1;
 
@@ -25,14 +25,72 @@
     return span > 0 ? clamp(-r.top / span) : 0;
   }
 
+  /* ---------------- Auto-advance to finish a section when scrolling stops ---------------- */
+  var idleTimer = null, autoRAF = null, autoScrolling = false;
+  var lastScrollY = window.pageYOffset, ignoreScrollUntil = 0, lastDir = 1;
+
+  function endAuto() {
+    if (autoRAF) cancelAnimationFrame(autoRAF);
+    autoRAF = null;
+    autoScrolling = false;
+    ignoreScrollUntil = performance.now() + 300;
+  }
+
+  function autoAdvance() {
+    if (autoScrolling || !ready || !running) return;
+    var p = progress();
+    var targetP = lastDir > 0 ? 1 : 0;
+    if (Math.abs(targetP - p) < 0.01) return;
+    var span = track.offsetHeight - window.innerHeight;
+    if (span <= 0) return;
+    var startY = window.pageYOffset;
+    var endY = startY + (targetP - p) * span;
+    var maxY = document.documentElement.scrollHeight - window.innerHeight;
+    endY = clamp(endY, 0, maxY);
+    var dist = Math.abs(endY - startY);
+    if (dist < 4) return;
+    var dur = lastDir > 0
+      ? clamp(1100 + dist * 1.6, 1300, 4500)
+      : clamp(500 + dist * 0.8, 600, 2500);
+    var t0 = performance.now();
+    autoScrolling = true;
+    autoRAF = requestAnimationFrame(function step(now) {
+      var k = clamp((now - t0) / dur);
+      var e = 1 - Math.pow(1 - k, 3);
+      window.scrollTo(0, startY + (endY - startY) * e);
+      if (k < 1) autoRAF = requestAnimationFrame(step);
+      else endAuto();
+    });
+  }
+
+  window.addEventListener("scroll", function () {
+    var y = window.pageYOffset;
+    if (autoScrolling) { lastScrollY = y; return; }
+    if (performance.now() < ignoreScrollUntil) { lastScrollY = y; return; }
+    var dy = y - lastScrollY;
+    lastScrollY = y;
+    if (!dy) return;
+    lastDir = dy > 0 ? 1 : -1;
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(autoAdvance, 100);
+  }, { passive: true });
+
+  ["wheel", "touchstart", "keydown"].forEach(function (ev) {
+    window.addEventListener(ev, function () {
+      clearTimeout(idleTimer);
+      endAuto();
+      ignoreScrollUntil = 0;
+    }, { passive: true });
+  });
+
   function render(force) {
     var p = progress();
     var target = clamp(p / VIDEO_END) * duration;
-    var d = target - cur;
-    cur = Math.abs(d) < 0.002 ? target : cur + d * 0.12;
-    if (duration && Math.abs(video.currentTime - cur) > 0.012) { try { video.currentTime = cur; } catch (e) {} }
+    var moved = Math.abs(target - cur);
+    cur = target;
+    seek();
 
-    if (p === lastP && !force && Math.abs(d) < 0.002) return;
+    if (p === lastP && !force && moved < 0.02) return;
     lastP = p;
 
     var sp = ease(clamp((p - SPACE_IN[0]) / (SPACE_IN[1] - SPACE_IN[0])));
@@ -57,6 +115,14 @@
     cta.style.pointerEvents = ct > 0.6 ? "auto" : "none";
   }
 
+  /* Only issue a new seek when the previous one finished; always target the latest
+     scroll position so seeks never queue up and jump. */
+  function seek() {
+    if (!duration || video.seeking) return;
+    if (Math.abs(video.currentTime - cur) > 0.02) { try { video.currentTime = cur; } catch (e) {} }
+  }
+  video.addEventListener("seeked", seek);
+
   function loop() { if (!running) return; render(false); requestAnimationFrame(loop); }
   function start() { if (running || !ready) return; running = true; requestAnimationFrame(loop); }
   function stop() { running = false; }
@@ -77,7 +143,7 @@
   }
 
   function loadVideo() {
-    var url = "assets/video.mp4", done = false;
+    var url = "assets/terra.webm", done = false;
     var safety = setTimeout(function () { if (!done) { done = true; video.src = url; finishLoad(); } }, 30000);
     video.addEventListener("loadedmetadata", function () { duration = video.duration; });
     fetch(url).then(function (res) {
@@ -87,7 +153,7 @@
       var reader = res.body.getReader();
       return (function pump() {
         return reader.read().then(function (r) {
-          if (r.done) return new Blob(chunks, { type: "video/mp4" });
+          if (r.done) return new Blob(chunks, { type: "video/webm" });
           chunks.push(r.value); got += r.value.length;
           setPct(total ? Math.min(got / total, 0.98) : 0.5);
           return pump();
